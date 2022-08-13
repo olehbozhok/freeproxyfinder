@@ -40,7 +40,6 @@ func GetProxiesListSpysOne(countryISO string) (proxylist []ProxySocks5Conf, err 
 }
 
 func getProxiesListSpysOneInternal(xx0, countryISO string) (proxylist []ProxySocks5Conf, err error) {
-	fmt.Println("xx0:", xx0)
 
 	var req *http.Request
 
@@ -94,9 +93,6 @@ func getProxiesListSpysOneInternal(xx0, countryISO string) (proxylist []ProxySoc
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
 		return nil, err
-	}
-	for _, c := range client.Jar.Cookies(req.URL) {
-		fmt.Println(c.Name, c.Value)
 	}
 
 	if xx0 == "" {

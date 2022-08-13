@@ -1,11 +1,14 @@
 package main
 
 import (
+	"context"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/armon/go-socks5"
 	"github.com/gorilla/mux"
 )
 
@@ -44,7 +47,27 @@ func main() {
 		Handler:      r, // Pass our instance of gorilla/mux in.
 	}
 
-	log.Printf("srv run on %s\n", addr)
-	log.Fatalln(srv.ListenAndServe())
+	// log.Printf("srv run on %s\n", addr)
+	// log.Fatalln(srv.ListenAndServe())
+	_ = srv
+
+	conf := &socks5.Config{
+		Dial: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			dialer, err := proxyW.GetDialer()
+			if err != nil {
+				return nil, err
+			}
+			return dialer.DialContext(ctx, network, addr)
+		},
+	}
+	server, err := socks5.New(conf)
+	if err != nil {
+		panic(err)
+	}
+
+	// Create SOCKS5 proxy on localhost port 8000
+	if err := server.ListenAndServe("tcp", ":8000"); err != nil {
+		panic(err)
+	}
 
 }

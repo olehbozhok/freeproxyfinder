@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"sync"
@@ -13,6 +14,7 @@ import (
 type ProxyWorker struct {
 	wg  sync.WaitGroup
 	mut sync.Mutex
+	i   int
 
 	activeProxies []parsers.ProxySocks5Conf
 }
@@ -41,7 +43,8 @@ func (pW *ProxyWorker) UpdateProxies() {
 			defer wg.Done()
 			latency, err := pr.CheckLatency()
 			if err != nil {
-				log.Printf("error adress:%s err:%v\n", pr.Address, err)
+				// log.Printf("error adress:%s err:%v\n", pr.Address, err)
+				return
 			}
 			if latency < 15.0 && err == nil {
 				pr.LastCheckLatency = time.Now()
@@ -56,6 +59,21 @@ func (pW *ProxyWorker) UpdateProxies() {
 	pW.mut.Lock()
 	pW.activeProxies = activeProxies
 	pW.mut.Unlock()
+}
+
+func (pW *ProxyWorker) GetDialer() (parsers.Dialer, error) {
+	pW.mut.Lock()
+	defer pW.mut.Unlock()
+
+	if len(pW.activeProxies) != 0 {
+		n := (len(pW.activeProxies) - 1) % (pW.i + 1)
+
+		pc := &pW.activeProxies[n]
+		dialer, err := pc.GetDialer()
+		pW.i++
+		return dialer, err
+	}
+	return nil, errors.New("no acrive proxies")
 }
 
 func (pW *ProxyWorker) HttpHandler(w http.ResponseWriter, r *http.Request) {
