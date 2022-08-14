@@ -66,14 +66,13 @@ func (pW *ProxyWorker) GetDialer() (parsers.Dialer, error) {
 	defer pW.mut.Unlock()
 
 	if len(pW.activeProxies) != 0 {
-		n := (len(pW.activeProxies) - 1) % (pW.i + 1)
-
+		n := pW.i % len(pW.activeProxies)
 		pc := &pW.activeProxies[n]
 		dialer, err := pc.GetDialer()
 		pW.i++
 		return dialer, err
 	}
-	return nil, errors.New("no acrive proxies")
+	return nil, errors.New("no active proxies")
 }
 
 func (pW *ProxyWorker) HttpHandler(w http.ResponseWriter, r *http.Request) {
